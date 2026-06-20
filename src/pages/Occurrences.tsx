@@ -10,6 +10,21 @@ import {
 
 type VoiceField = 'description' | 'otherType'
 
+interface CustomOccurrenceCategory {
+  id: string
+  name: string
+  occurrences: string[]
+}
+
+function loadCustomOccurrenceCategories(): CustomOccurrenceCategory[] {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem('categoriasPersonalizadasBh') || '[]')
+    return Array.isArray(parsed) ? parsed as CustomOccurrenceCategory[] : []
+  } catch {
+    return []
+  }
+}
+
 interface SpeechRecognitionResultEvent {
   results: ArrayLike<{
     0: { transcript: string }
@@ -60,6 +75,17 @@ function createEmptyForm() {
 }
 
 export default function Occurrences() {
+  const allOccurrenceCategories = useMemo(
+    () => [
+      ...occurrenceCategories,
+      ...loadCustomOccurrenceCategories().map((category) => ({
+        name: category.name,
+        type: 'Personalizada',
+        occurrences: category.occurrences,
+      })),
+    ],
+    [],
+  )
   const [occurrences, setOccurrences] = useState<StoredOccurrence[]>(loadOccurrences)
   const [form, setForm] = useState(createEmptyForm)
   const [search, setSearch] = useState('')
@@ -321,7 +347,7 @@ export default function Occurrences() {
                   })}
                 >
                   <option value="">Selecione</option>
-                  {occurrenceCategories.map((category) => (
+                  {allOccurrenceCategories.map((category) => (
                     <option value={category.name} key={category.name}>
                       {category.name} ({category.type})
                     </option>
@@ -350,7 +376,7 @@ export default function Occurrences() {
               {form.category && (
                 <div className="occurrence-types-grid">
                   {[
-                    ...(occurrenceCategories.find((category) => category.name === form.category)?.occurrences ?? []),
+                    ...(allOccurrenceCategories.find((category) => category.name === form.category)?.occurrences ?? []),
                     'Outro',
                   ].map((type) => (
                     <label className="occurrence-type-option" key={type}>

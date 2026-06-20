@@ -1,7 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
+import Employees from './pages/Employees'
 import Occurrences from './pages/Occurrences'
-import PlaceholderPage from './pages/PlaceholderPage'
+import Reports from './pages/Reports'
+import Settings from './pages/Settings'
+import Responsibles from './pages/Responsibles'
 import Stores from './pages/Stores'
 import './App.css'
 
@@ -12,10 +15,10 @@ function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/ocorrencias" element={<Occurrences />} />
       <Route path="/lojas" element={<Stores />} />
-      <Route path="/colaboradores" element={<PlaceholderPage title="Colaboradores" description="Gestão dos colaboradores vinculados às lojas." />} />
-      <Route path="/responsaveis" element={<PlaceholderPage title="Responsáveis" description="Gestão dos responsáveis pelo atendimento das ocorrências." />} />
-      <Route path="/relatorios" element={<PlaceholderPage title="Relatórios" description="Indicadores e relatórios gerenciais das ocorrências." />} />
-      <Route path="/configuracoes" element={<PlaceholderPage title="Configurações" description="Configurações gerais e tipos de ocorrência." />} />
+      <Route path="/colaboradores" element={<Employees />} />
+      <Route path="/responsaveis" element={<Responsibles />} />
+      <Route path="/relatorios" element={<Reports />} />
+      <Route path="/configuracoes" element={<Settings />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )
