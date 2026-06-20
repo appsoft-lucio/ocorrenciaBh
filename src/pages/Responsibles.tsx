@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useMemo, useState, type FormEvent } from 'react'
 import AppLayout from '../components/layout/AppLayout'
 import { occurrenceCategories } from '../data/occurrenceCategories'
 import { loadEmployees } from '../services/employeeStorage'
@@ -28,11 +28,70 @@ export default function Responsibles() {
   const [search, setSearch] = useState('')
   const [storeFilter, setStoreFilter] = useState('Todas')
   const [statusFilter, setStatusFilter] = useState('Todos')
+  const [assignmentStoreFilter, setAssignmentStoreFilter] = useState('Todas')
+  const [assignmentShiftFilter, setAssignmentShiftFilter] = useState('Todos')
+  const [assignmentRoleFilter, setAssignmentRoleFilter] = useState('')
+  const [assignmentStatusFilter, setAssignmentStatusFilter] = useState('Todos')
+  const [assignmentNameSearch, setAssignmentNameSearch] = useState('')
   const [message, setMessage] = useState('')
 
   const selectedEmployee = employees.find(
     (employee) => employee.registration === form.employeeRegistration,
   )
+
+  const getEmployeeAvailability = useCallback((employee: (typeof employees)[number]) => {
+    if (employee.status !== 'Ativo') return employee.status
+
+    const assignments = responsibles.filter((item) =>
+      item.employeeRegistration === employee.registration &&
+      item.id !== editingId &&
+      item.status === 'Disponível',
+    )
+
+    if (!assignments.length) return 'Disponível'
+
+    const targetStore = assignmentStoreFilter !== 'Todas'
+      ? assignmentStoreFilter
+      : form.store
+
+    if (targetStore && assignments.some((item) => item.store !== targetStore)) {
+      return 'Em outra loja'
+    }
+
+    if (targetStore && assignments.some((item) => item.store === targetStore)) {
+      return 'Já responsável nesta loja'
+    }
+
+    return 'Já possui atribuição'
+  }, [assignmentStoreFilter, editingId, form.store, responsibles])
+
+  const assignmentRoles = useMemo(
+    () => Array.from(new Set(
+      employees
+        .map((employee) => employee.role),
+    )).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    [employees],
+  )
+
+  const selectedEmployeeAssignments = selectedEmployee
+    ? responsibles.filter((item) =>
+        item.employeeRegistration === selectedEmployee.registration &&
+        item.id !== editingId,
+      )
+    : []
+
+  const assignmentEmployees = useMemo(() => {
+    const term = assignmentNameSearch.toLocaleLowerCase('pt-BR').trim()
+    return employees
+      .filter((employee) =>
+        (assignmentStoreFilter === 'Todas' || employee.store === assignmentStoreFilter) &&
+        (assignmentShiftFilter === 'Todos' || employee.shift === assignmentShiftFilter) &&
+        (!assignmentRoleFilter || employee.role === assignmentRoleFilter) &&
+        (assignmentStatusFilter === 'Todos' || getEmployeeAvailability(employee) === assignmentStatusFilter) &&
+        (!term || employee.name.toLocaleLowerCase('pt-BR').includes(term) || employee.registration.toLocaleLowerCase('pt-BR').includes(term)),
+      )
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+  }, [assignmentNameSearch, assignmentRoleFilter, assignmentShiftFilter, assignmentStatusFilter, assignmentStoreFilter, employees, getEmployeeAvailability])
 
   const filteredResponsibles = useMemo(() => {
     const term = search.toLocaleLowerCase('pt-BR').trim()
@@ -72,6 +131,11 @@ export default function Responsibles() {
   function openNewAssignment() {
     setEditingId(null)
     setForm(emptyForm)
+    setAssignmentStoreFilter('Todas')
+    setAssignmentShiftFilter('Todos')
+    setAssignmentRoleFilter('')
+    setAssignmentStatusFilter('Todos')
+    setAssignmentNameSearch('')
     setShowForm(true)
   }
 
@@ -85,6 +149,11 @@ export default function Responsibles() {
       status: assignment.status,
       isPrimary: assignment.isPrimary,
     })
+    setAssignmentRoleFilter(assignment.role)
+    setAssignmentStoreFilter(assignment.store)
+    setAssignmentShiftFilter(assignment.shift)
+    setAssignmentStatusFilter('Todos')
+    setAssignmentNameSearch(assignment.employeeName)
     setShowForm(true)
   }
 
@@ -92,6 +161,16 @@ export default function Responsibles() {
     event.preventDefault()
     if (!selectedEmployee || !form.store || !form.category || !form.shift) {
       setMessage('Selecione colaborador, loja, categoria e turno.')
+      return
+    }
+
+    if (selectedEmployee.status !== 'Ativo') {
+      setMessage(`Este colaborador está ${selectedEmployee.status.toLowerCase()} e não pode receber uma nova atribuição agora.`)
+      return
+    }
+
+    if (getEmployeeAvailability(selectedEmployee) === 'Em outra loja') {
+      setMessage('Este colaborador já está responsável em outra loja e não está disponível para esta escala.')
       return
     }
 
@@ -115,8 +194,13 @@ export default function Responsibles() {
       )
     }
 
+    const nextAssignmentNumber = responsibles.reduce((greatest, item) => {
+      const number = Number(item.id.replace(/\D/g, ''))
+      return Number.isNaN(number) ? greatest : Math.max(greatest, number)
+    }, 0) + 1
+
     const assignment: ResponsibleAssignment = {
-      id: editingId || `responsible-${Date.now()}`,
+      id: editingId || `responsible-${nextAssignmentNumber}`,
       employeeRegistration: selectedEmployee.registration,
       employeeName: selectedEmployee.name,
       role: selectedEmployee.role,
@@ -243,46 +327,147 @@ export default function Responsibles() {
               <button type="button" onClick={() => setShowForm(false)} aria-label="Fechar">×</button>
             </div>
             <form onSubmit={handleSubmit}>
-              <label>Colaborador *
-                <select value={form.employeeRegistration} onChange={(event) => {
-                  const employee = employees.find((item) => item.registration === event.target.value)
-                  setForm({ ...form, employeeRegistration: event.target.value, store: employee?.store || form.store, shift: employee?.shift || form.shift })
-                }}>
-                  <option value="">Selecione</option>
-                  {employees.filter((employee) => employee.status === 'Ativo').map((employee) => (
-                    <option value={employee.registration} key={employee.registration}>{employee.name} • {employee.role}</option>
-                  ))}
-                </select>
-              </label>
-              <div className="form-grid">
-                <label>Loja *
-                  <select value={form.store} onChange={(event) => setForm({ ...form, store: event.target.value })}>
-                    <option value="">Selecione</option>{stores.filter((store) => store.status === 'Ativa').map((store) => <option key={store.id}>{store.name}</option>)}
-                  </select>
-                </label>
-                <label>Turno *
-                  <select value={form.shift} onChange={(event) => setForm({ ...form, shift: event.target.value })}>
-                    <option value="">Selecione</option><option>Manhã</option><option>Tarde</option><option>Noite</option><option>Comercial</option><option>Plantão</option>
-                  </select>
-                </label>
-              </div>
               <label>Categoria atendida *
                 <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>
                   <option value="">Selecione</option>{occurrenceCategories.map((category) => <option key={category.name}>{category.name}</option>)}
                 </select>
               </label>
-              <div className="form-grid">
-                <label>Status
-                  <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as ResponsibleAssignment['status'] })}>
-                    <option>Disponível</option><option>Indisponível</option><option>Férias</option>
-                  </select>
-                </label>
-                <label className="responsible-primary-option">
-                  <input type="checkbox" checked={form.isPrimary} onChange={(event) => setForm({ ...form, isPrimary: event.target.checked })} />
-                  <span>Responsável principal</span>
+              <div className="assignment-filter-box">
+                <div className="assignment-filter-heading">
+                  <strong>Filtrar colaboradores</strong>
+                  <span>Use um filtro isolado ou combine vários.</span>
+                </div>
+                <div className="form-grid">
+                  <label>Loja
+                    <select value={assignmentStoreFilter} onChange={(event) => {
+                      setAssignmentStoreFilter(event.target.value)
+                      setForm({ ...form, employeeRegistration: '' })
+                    }}>
+                      <option>Todas</option>
+                      {stores.filter((store) => store.status === 'Ativa').map((store) => <option key={store.id}>{store.name}</option>)}
+                    </select>
+                  </label>
+                  <label>Turno
+                    <select value={assignmentShiftFilter} onChange={(event) => {
+                      setAssignmentShiftFilter(event.target.value)
+                      setForm({ ...form, employeeRegistration: '' })
+                    }}>
+                      <option>Todos</option><option>Manhã</option><option>Tarde</option><option>Noite</option><option>Comercial</option><option>Plantão</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="form-grid">
+                  <label>Função
+                    <select value={assignmentRoleFilter} onChange={(event) => {
+                      setAssignmentRoleFilter(event.target.value)
+                      setForm({ ...form, employeeRegistration: '' })
+                    }}>
+                      <option value="">Todas as funções</option>
+                      {assignmentRoles.map((role) => <option key={role}>{role}</option>)}
+                    </select>
+                  </label>
+                  <label>Situação
+                    <select value={assignmentStatusFilter} onChange={(event) => {
+                      setAssignmentStatusFilter(event.target.value)
+                      setForm({ ...form, employeeRegistration: '' })
+                    }}>
+                      <option>Todos</option>
+                      <option>Disponível</option>
+                      <option>Já responsável nesta loja</option>
+                      <option>Já possui atribuição</option>
+                      <option>Em outra loja</option>
+                      <option>Afastado</option>
+                      <option>Férias</option>
+                      <option>Inativo</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Nome ou matrícula
+                  <input
+                    type="search"
+                    value={assignmentNameSearch}
+                    onChange={(event) => {
+                      setAssignmentNameSearch(event.target.value)
+                      setForm({ ...form, employeeRegistration: '' })
+                    }}
+                    placeholder="Digite parte do nome ou matrícula"
+                  />
                 </label>
               </div>
-              {selectedEmployee && <div className="employee-source-preview"><strong>{selectedEmployee.name}</strong><span>{selectedEmployee.phone} • {selectedEmployee.email}</span></div>}
+
+              <label>Colaborador encontrado *
+                <select
+                  value={form.employeeRegistration}
+                  onChange={(event) => {
+                    const employee = employees.find((item) => item.registration === event.target.value)
+                    setForm({
+                      ...form,
+                      employeeRegistration: event.target.value,
+                      store: employee?.store || '',
+                      shift: employee?.shift || '',
+                    })
+                  }}
+                >
+                  <option value="">Selecione entre {assignmentEmployees.length} resultado(s)</option>
+                  {assignmentEmployees.map((employee) => {
+                    const assignments = responsibles.filter((item) => item.employeeRegistration === employee.registration)
+                    const availability = getEmployeeAvailability(employee)
+                    const assignmentLabel = assignments.length ? ` • ${assignments.map((item) => item.store).join(', ')}` : ''
+                    return (
+                      <option
+                        value={employee.registration}
+                        key={employee.registration}
+                        disabled={['Em outra loja', 'Afastado', 'Férias', 'Inativo'].includes(availability)}
+                      >
+                        {availability} — {employee.name} • {employee.role} • {employee.store} • {employee.shift}{assignmentLabel}
+                      </option>
+                    )
+                  })}
+                </select>
+                <small className="assignment-result-count">
+                  {assignmentEmployees.length} colaborador(es) encontrado(s). Atribuições existentes aparecem ao lado do nome.
+                </small>
+              </label>
+
+              {selectedEmployee && (
+                <div className="selected-employee-status">
+                  <div>
+                    <strong>{selectedEmployee.name}</strong>
+                    <span>{selectedEmployee.role} • {selectedEmployee.store} • {selectedEmployee.shift}</span>
+                  </div>
+                  <span className={`availability-status availability-${getEmployeeAvailability(selectedEmployee).toLocaleLowerCase('pt-BR').replaceAll(' ', '-')}`}>
+                    {getEmployeeAvailability(selectedEmployee)}
+                  </span>
+                  {selectedEmployeeAssignments.length > 0 && (
+                    <div className="existing-assignments">
+                      <strong>Já é responsável por:</strong>
+                      {selectedEmployeeAssignments.map((item) => (
+                        <span key={item.id}>{item.store} • {item.category} • {item.shift}</span>
+                      ))}
+                    </div>
+                  )}
+                  {['Em outra loja', 'Afastado', 'Férias', 'Inativo'].includes(getEmployeeAvailability(selectedEmployee)) && (
+                    <p>Este colaborador não está disponível para esta escala.</p>
+                  )}
+                </div>
+              )}
+
+              <div className="form-grid">
+                <label>Loja da atribuição *
+                  <select value={form.store} onChange={(event) => setForm({ ...form, store: event.target.value })}>
+                    <option value="">Selecione</option>{stores.filter((store) => store.status === 'Ativa').map((store) => <option key={store.id}>{store.name}</option>)}
+                  </select>
+                </label>
+                <label>Turno da atribuição *
+                  <select value={form.shift} onChange={(event) => setForm({ ...form, shift: event.target.value })}>
+                    <option value="">Selecione</option><option>Manhã</option><option>Tarde</option><option>Noite</option><option>Comercial</option><option>Plantão</option>
+                  </select>
+                </label>
+              </div>
+              <label className="responsible-primary-option">
+                <input type="checkbox" checked={form.isPrimary} onChange={(event) => setForm({ ...form, isPrimary: event.target.checked })} />
+                <span>Responsável principal</span>
+              </label>
               <div className="store-modal-actions">
                 <button type="button" onClick={() => setShowForm(false)}>Cancelar</button>
                 <button className="primary-button" type="submit">Salvar atribuição</button>

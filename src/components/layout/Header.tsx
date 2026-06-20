@@ -33,7 +33,7 @@ export default function Header({ onOpenMenu, title = 'Dashboard' }: HeaderProps)
       <div className="header-left">
         <div>
           <h1>{title}</h1>
-          <p>Ocorrências Supermercados BH</p>
+          <p>Sistema Ocorrências BH</p>
         </div>
       </div>
 

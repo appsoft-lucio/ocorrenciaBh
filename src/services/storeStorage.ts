@@ -16,6 +16,8 @@ export interface Store {
 }
 
 export const STORES_STORAGE_KEY = 'lojasBh'
+const STORES_DEMO_VERSION_KEY = 'lojasBhDemoVersion'
+const STORES_DEMO_VERSION = '2'
 
 const seedStores: Store[] = [
   {
@@ -27,8 +29,8 @@ const seedStores: Store[] = [
     regional: 'Metropolitana',
     manager: 'Marcos Silva',
     phone: '(31) 3333-0142',
-    email: 'loja142@supermercadosbh.com.br',
-    employees: 84,
+    email: 'loja142@ocorrenciasbh.local',
+    employees: 75,
     openingHours: '07:00 às 22:00',
     status: 'Ativa',
   },
@@ -41,8 +43,8 @@ const seedStores: Store[] = [
     regional: 'Belo Horizonte',
     manager: 'Carla Souza',
     phone: '(31) 3333-0087',
-    email: 'loja087@supermercadosbh.com.br',
-    employees: 96,
+    email: 'loja087@ocorrenciasbh.local',
+    employees: 75,
     openingHours: '07:00 às 23:00',
     status: 'Ativa',
   },
@@ -55,8 +57,8 @@ const seedStores: Store[] = [
     regional: 'Norte',
     manager: 'Renato Lima',
     phone: '(31) 3333-0215',
-    email: 'loja215@supermercadosbh.com.br',
-    employees: 71,
+    email: 'loja215@ocorrenciasbh.local',
+    employees: 75,
     openingHours: '07:00 às 22:00',
     status: 'Ativa',
   },
@@ -69,8 +71,8 @@ const seedStores: Store[] = [
     regional: 'Oeste',
     manager: 'Fernanda Alves',
     phone: '(31) 3333-0036',
-    email: 'loja036@supermercadosbh.com.br',
-    employees: 63,
+    email: 'loja036@ocorrenciasbh.local',
+    employees: 75,
     openingHours: '08:00 às 21:00',
     status: 'Ativa',
   },
@@ -81,11 +83,26 @@ export function loadStores(): Store[] {
     const stored = localStorage.getItem(STORES_STORAGE_KEY)
     if (!stored) {
       saveStores(seedStores)
+      localStorage.setItem(STORES_DEMO_VERSION_KEY, STORES_DEMO_VERSION)
       return seedStores
     }
 
     const parsed: unknown = JSON.parse(stored)
-    return Array.isArray(parsed) ? parsed as Store[] : seedStores
+    if (!Array.isArray(parsed)) return seedStores
+
+    const stores = parsed as Store[]
+    if (localStorage.getItem(STORES_DEMO_VERSION_KEY) !== STORES_DEMO_VERSION) {
+      const updatedStores = stores.map((store) =>
+        seedStores.some((seed) => seed.id === store.id)
+          ? { ...store, employees: 75 }
+          : store,
+      )
+      saveStores(updatedStores)
+      localStorage.setItem(STORES_DEMO_VERSION_KEY, STORES_DEMO_VERSION)
+      return updatedStores
+    }
+
+    return stores
   } catch {
     return seedStores
   }

@@ -1,4 +1,4 @@
-export type EmployeeStatus = 'Ativo' | 'Afastado' | 'Inativo'
+export type EmployeeStatus = 'Ativo' | 'Afastado' | 'Férias' | 'Inativo'
 
 export interface Employee {
   id: string
@@ -30,14 +30,103 @@ export interface HrSyncResult {
 const EMPLOYEES_STORAGE_KEY = 'colaboradoresBh'
 const LAST_SYNC_STORAGE_KEY = 'colaboradoresBhUltimaSincronizacao'
 
-const simulatedHrEmployees: Omit<Employee, 'id' | 'source' | 'updatedAt'>[] = [
-  { registration: 'BH001842', name: 'Ana Paula Ribeiro', store: 'Loja 087', sector: 'Prevenção de Perdas', role: 'Fiscal de Loja', shift: 'Manhã', phone: '(31) 98871-2040', email: 'ana.ribeiro@empresa.com.br', admissionDate: '2021-03-15', lockerNumber: 'A-014', status: 'Ativo' },
-  { registration: 'BH002175', name: 'Carlos Eduardo Santos', store: 'Loja 142', sector: 'Prevenção de Perdas', role: 'Fiscal de Loja', shift: 'Tarde', phone: '(31) 99714-3052', email: 'carlos.santos@empresa.com.br', admissionDate: '2022-08-01', lockerNumber: 'B-022', status: 'Ativo' },
-  { registration: 'BH001306', name: 'Márcia de Oliveira', store: 'Loja 215', sector: 'Gerência', role: 'Gerente de Loja', shift: 'Comercial', phone: '(31) 99103-8842', email: 'marcia.oliveira@empresa.com.br', admissionDate: '2018-05-21', lockerNumber: 'G-003', status: 'Ativo' },
-  { registration: 'BH003011', name: 'Lucas Ferreira Lima', store: 'Loja 036', sector: 'Frente de caixa', role: 'Operador de Caixa', shift: 'Noite', phone: '(31) 98412-7631', email: 'lucas.lima@empresa.com.br', admissionDate: '2024-01-08', lockerNumber: 'C-045', status: 'Ativo' },
-  { registration: 'BH002644', name: 'Juliana Costa Mendes', store: 'Loja 087', sector: 'Recursos Humanos', role: 'Assistente de RH', shift: 'Comercial', phone: '(31) 99224-6190', email: 'juliana.mendes@empresa.com.br', admissionDate: '2023-02-13', lockerNumber: 'A-031', status: 'Afastado' },
-  { registration: 'BH001998', name: 'Roberto Alves Gomes', store: 'Loja 142', sector: 'Manutenção', role: 'Técnico de Manutenção', shift: 'Manhã', phone: '(31) 99856-4412', email: 'roberto.gomes@empresa.com.br', admissionDate: '2020-10-05', lockerNumber: 'M-008', status: 'Ativo' },
+const storeTeams = ['Loja 036', 'Loja 087', 'Loja 142', 'Loja 215']
+
+const staffingPlan = [
+  { sector: 'Gerência', role: 'Gerente de Loja', amount: 1, shift: 'Comercial' },
+  { sector: 'Gerência', role: 'Subgerente de Loja', amount: 2, shift: 'Comercial' },
+  { sector: 'Administrativo', role: 'Auxiliar Administrativo', amount: 1, shift: 'Comercial' },
+  { sector: 'Prevenção de Perdas', role: 'Encarregado de Prevenção', amount: 1, shift: 'Comercial' },
+  { sector: 'Prevenção de Perdas', role: 'Fiscal de Loja', amount: 5, shift: 'Alternado' },
+  { sector: 'Frente de caixa', role: 'Encarregado de Frente de Caixa', amount: 2, shift: 'Alternado' },
+  { sector: 'Frente de caixa', role: 'Operador de Caixa', amount: 14, shift: 'Alternado' },
+  { sector: 'Frente de caixa', role: 'Empacotador', amount: 4, shift: 'Alternado' },
+  { sector: 'Tesouraria', role: 'Auxiliar de Tesouraria', amount: 2, shift: 'Alternado' },
+  { sector: 'Mercearia', role: 'Encarregado de Mercearia', amount: 1, shift: 'Comercial' },
+  { sector: 'Mercearia', role: 'Repositor de Mercadorias', amount: 10, shift: 'Alternado' },
+  { sector: 'Açougue', role: 'Encarregado de Açougue', amount: 1, shift: 'Comercial' },
+  { sector: 'Açougue', role: 'Açougueiro', amount: 4, shift: 'Alternado' },
+  { sector: 'Açougue', role: 'Auxiliar de Açougue', amount: 3, shift: 'Alternado' },
+  { sector: 'Padaria', role: 'Encarregado de Padaria', amount: 1, shift: 'Comercial' },
+  { sector: 'Padaria', role: 'Padeiro', amount: 2, shift: 'Manhã' },
+  { sector: 'Padaria', role: 'Confeiteiro', amount: 1, shift: 'Manhã' },
+  { sector: 'Padaria', role: 'Atendente de Padaria', amount: 2, shift: 'Alternado' },
+  { sector: 'Hortifrúti', role: 'Encarregado de Hortifrúti', amount: 1, shift: 'Comercial' },
+  { sector: 'Hortifrúti', role: 'Repositor de Hortifrúti', amount: 3, shift: 'Alternado' },
+  { sector: 'Frios e Laticínios', role: 'Encarregado de Frios', amount: 1, shift: 'Comercial' },
+  { sector: 'Frios e Laticínios', role: 'Atendente de Frios', amount: 3, shift: 'Alternado' },
+  { sector: 'Recebimento', role: 'Conferente de Mercadorias', amount: 2, shift: 'Manhã' },
+  { sector: 'Depósito', role: 'Auxiliar de Depósito', amount: 2, shift: 'Alternado' },
+  { sector: 'Limpeza', role: 'Auxiliar de Serviços Gerais', amount: 3, shift: 'Alternado' },
+  { sector: 'Manutenção', role: 'Técnico de Manutenção', amount: 1, shift: 'Comercial' },
+  { sector: 'Recursos Humanos', role: 'Assistente de RH', amount: 1, shift: 'Comercial' },
+  { sector: 'E-commerce', role: 'Separador de Pedidos', amount: 1, shift: 'Alternado' },
 ]
+
+const firstNames = [
+  'Ana Paula', 'Carlos Eduardo', 'Márcia', 'Lucas', 'Juliana', 'Roberto', 'Fernanda',
+  'Rafael', 'Patrícia', 'Diego', 'Camila', 'André', 'Vanessa', 'Bruno', 'Renata',
+  'Gustavo', 'Aline', 'Marcelo', 'Débora', 'Thiago', 'Simone', 'Leandro', 'Natália',
+  'Rodrigo', 'Elaine', 'Felipe', 'Adriana', 'Wesley', 'Cristiane', 'Daniel',
+]
+
+const lastNames = [
+  'Ribeiro', 'Santos', 'Oliveira', 'Lima', 'Mendes', 'Gomes', 'Alves', 'Souza',
+  'Ferreira', 'Costa', 'Martins', 'Pereira', 'Rocha', 'Carvalho', 'Barbosa',
+  'Nascimento', 'Moreira', 'Cardoso', 'Teixeira', 'Correia',
+]
+
+function resolveShift(configuredShift: string, employeeIndex: number) {
+  if (configuredShift !== 'Alternado') return configuredShift
+  return ['Manhã', 'Tarde', 'Noite'][employeeIndex % 3]
+}
+
+function generateSimulatedHrEmployees(): Omit<Employee, 'id' | 'source' | 'updatedAt'>[] {
+  let globalIndex = 0
+
+  return storeTeams.flatMap((store, storeIndex) => {
+    let locker = 1
+    return staffingPlan.flatMap((position) =>
+      Array.from({ length: position.amount }, (_, roleIndex) => {
+        const index = globalIndex++
+        const firstName = firstNames[index % firstNames.length]
+        const lastName = lastNames[(index * 7 + storeIndex) % lastNames.length]
+        const secondLastName = lastNames[(index * 11 + roleIndex + 3) % lastNames.length]
+        const normalizedName = `${firstName}.${lastName}`
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replaceAll(' ', '.')
+          .toLowerCase()
+        const year = 2017 + (index % 9)
+        const month = String((index % 12) + 1).padStart(2, '0')
+        const day = String((index % 27) + 1).padStart(2, '0')
+        const status: EmployeeStatus = index % 89 === 0
+          ? 'Inativo'
+          : index % 37 === 0
+            ? 'Afastado'
+            : index % 29 === 0
+              ? 'Férias'
+            : 'Ativo'
+
+        return {
+          registration: `BH${String(1000 + index).padStart(6, '0')}`,
+          name: `${firstName} ${lastName} ${secondLastName}`,
+          store,
+          sector: position.sector,
+          role: position.role,
+          shift: resolveShift(position.shift, index),
+          phone: `(31) 9${String(8000 + (index % 1999)).padStart(4, '0')}-${String(1000 + ((index * 37) % 8999)).padStart(4, '0')}`,
+          email: `${normalizedName}.${store.replace(/\D/g, '')}@empresa.com.br`,
+          admissionDate: `${year}-${month}-${day}`,
+          lockerNumber: `${String.fromCharCode(65 + storeIndex)}-${String(locker++).padStart(3, '0')}`,
+          status,
+        }
+      }),
+    )
+  })
+}
+
+const simulatedHrEmployees = generateSimulatedHrEmployees()
 
 export function loadEmployees(): Employee[] {
   try {

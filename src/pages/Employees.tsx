@@ -111,7 +111,7 @@ export default function Employees() {
             {stores.map((store) => <option key={store}>{store}</option>)}
           </select>
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-            <option>Todos</option><option>Ativo</option><option>Afastado</option><option>Inativo</option>
+            <option>Todos</option><option>Ativo</option><option>Afastado</option><option>Férias</option><option>Inativo</option>
           </select>
         </div>
 
@@ -149,12 +149,17 @@ export default function Employees() {
               <span><strong>{syncPreview.items.length}</strong> recebidos</span>
             </div>
             <div className="sync-preview-list">
-              {syncPreview.items.map((item) => (
+              {syncPreview.items.slice(0, 24).map((item) => (
                 <div key={item.registration}>
                   <span className={`sync-action ${item.syncAction === 'Novo' ? 'new' : 'update'}`}>{item.syncAction}</span>
                   <div><strong>{item.name}</strong><small>{item.registration} • {item.store} • {item.role}</small></div>
                 </div>
               ))}
+              {syncPreview.items.length > 24 && (
+                <p className="sync-preview-more">
+                  Exibindo 24 de {syncPreview.items.length} colaboradores. Os demais também serão sincronizados.
+                </p>
+              )}
             </div>
             <div className="store-modal-actions">
               <button type="button" onClick={() => setSyncPreview(null)}>Cancelar</button>

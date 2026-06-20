@@ -22,7 +22,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="sidebar-logo">
           <div className="bh-logo">BH</div>
           <strong>Ocorrências</strong>
-          <span>Supermercados BH</span>
+          <span>Ocorrências BH</span>
         </div>
 
         <nav aria-label="Menu principal">
