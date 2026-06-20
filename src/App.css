@@ -149,7 +149,7 @@
   font-weight: 500;
 }
 
-.header-user button {
+.header-user .logout-button {
   padding: 10px 18px;
   color: #fff;
   background: var(--color-accent);
@@ -160,9 +160,63 @@
   font-weight: 600;
 }
 
-.header-user button:hover {
+.header-user .logout-button:hover {
   background: var(--color-accent-hover);
   transform: translateY(-2px) scale(1.03);
+}
+
+.accessibility-controls {
+  display: flex;
+  gap: 7px;
+}
+
+.accessibility-controls button {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #fff;
+  background: rgba(255, 255, 255, .12);
+  border: 2px solid rgba(255, 255, 255, .45);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.accessibility-controls button.active {
+  color: #111827;
+  background: #fff;
+  border-color: #fff;
+}
+
+.large-text {
+  font-size: 112.5%;
+}
+
+.high-contrast {
+  --color-secondary: #000;
+  --color-accent: #c9000a;
+  --color-accent-hover: #a50008;
+  --color-background: #fff;
+  --color-text-secondary: #333;
+}
+
+.high-contrast .dashboard-content,
+.high-contrast .occurrence-form-card,
+.high-contrast .occurrence-filters,
+.high-contrast .dashboard-panel,
+.high-contrast .welcome-box {
+  color: #000;
+  background: #fff;
+}
+
+.high-contrast input,
+.high-contrast select,
+.high-contrast textarea {
+  color: #000;
+  border: 2px solid #000;
 }
 
 .mobile-menu {
@@ -586,6 +640,54 @@
 
 .occurrence-form-card form {
   gap: 16px;
+}
+
+.wizard-step {
+  display: contents;
+}
+
+.mobile-wizard-progress,
+.mobile-wizard-actions,
+.mobile-step-title {
+  display: none;
+}
+
+.wizard-review {
+  display: block;
+  padding: 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.review-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.review-list > div {
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.review-list span,
+.review-list strong {
+  display: block;
+}
+
+.review-list span {
+  margin-bottom: 4px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.review-list strong {
+  color: var(--color-secondary);
+  font-size: 13px;
 }
 
 .occurrence-form-card label {
@@ -1269,11 +1371,24 @@
   .header-user span {
     display: none;
   }
+
+  .header-user .logout-button {
+    display: none;
+  }
+
+  .accessibility-controls button {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 @media (max-width: 600px) {
+  .large-text {
+    font-size: 118.75%;
+  }
+
   .dashboard-content {
-    padding: 16px;
+    padding: 12px;
   }
 
   .welcome-box,
@@ -1313,6 +1428,183 @@
 
   .occurrence-card-top {
     flex-direction: column;
+  }
+
+  .occurrences-page {
+    display: block;
+  }
+
+  .occurrence-form-card,
+  .occurrence-filters {
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  .occurrence-consult {
+    margin-top: 18px;
+  }
+
+  .occurrence-form-card input,
+  .occurrence-form-card select,
+  .occurrence-form-card textarea,
+  .occurrence-filters > input {
+    min-height: 52px;
+    font-size: 17px;
+    border-width: 2px;
+  }
+
+  .occurrence-form-card label,
+  .occurrence-types legend {
+    font-size: 17px;
+  }
+
+  .wizard-step {
+    display: none;
+  }
+
+  .wizard-step.active {
+    display: block;
+  }
+
+  .mobile-step-title {
+    display: block;
+    margin: 0 0 16px;
+    color: var(--color-secondary);
+    font-size: 21px;
+  }
+
+  .mobile-wizard-progress {
+    display: block;
+    padding: 14px;
+    background: #eef5fb;
+    border: 2px solid #b9d5eb;
+    border-radius: 9px;
+  }
+
+  .mobile-wizard-progress strong {
+    color: #083f75;
+    font-size: 16px;
+  }
+
+  .mobile-wizard-progress > div {
+    height: 10px;
+    margin: 10px 0 7px;
+    overflow: hidden;
+    background: #cbd5e1;
+    border-radius: 999px;
+  }
+
+  .mobile-wizard-progress > div span {
+    display: block;
+    height: 100%;
+    background: #07509a;
+    border-radius: inherit;
+    transition: width .25s ease;
+  }
+
+  .mobile-wizard-progress p {
+    margin: 0;
+    color: #1f2937;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .occurrence-form-card .occurrence-type-option {
+    min-height: 54px;
+    padding: 12px;
+    border-width: 2px;
+    font-size: 16px;
+  }
+
+  .occurrence-form-card .occurrence-type-option input {
+    width: 24px;
+    min-height: 24px;
+  }
+
+  .voice-button {
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .image-field {
+    padding: 16px;
+    border-width: 2px;
+  }
+
+  .wizard-review {
+    padding: 0;
+    background: transparent;
+    border: 0;
+  }
+
+  .review-list {
+    grid-template-columns: 1fr;
+  }
+
+  .review-list > div {
+    padding: 13px;
+    border-width: 2px;
+  }
+
+  .review-list span {
+    font-size: 14px;
+  }
+
+  .review-list strong {
+    font-size: 16px;
+  }
+
+  .mobile-wizard-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    gap: 10px;
+    margin: 4px -16px -16px;
+    padding: 14px 16px;
+    background: #fff;
+    border-top: 2px solid #d1d5db;
+    box-shadow: 0 -8px 18px rgba(0, 0, 0, .08);
+  }
+
+  .mobile-wizard-actions button,
+  .wizard-review .primary-button {
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 16px;
+    border: 0;
+    border-radius: 7px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .wizard-back {
+    color: #111827;
+    background: #e5e7eb;
+  }
+
+  .wizard-next {
+    color: #fff;
+    background: #07509a;
+  }
+
+  .status-tabs button {
+    min-height: 46px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .occurrence-card {
+    padding: 18px;
+  }
+
+  .occurrence-card h3 {
+    font-size: 18px;
+  }
+
+  .occurrence-card > p,
+  .occurrence-meta span {
+    font-size: 15px;
   }
 
   .store-summary,

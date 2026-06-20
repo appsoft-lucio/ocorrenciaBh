@@ -66,6 +66,7 @@ export default function Occurrences() {
   const [activeStatus, setActiveStatus] = useState<'Todas' | OccurrenceStatus>('Todas')
   const [message, setMessage] = useState('')
   const [listeningField, setListeningField] = useState<VoiceField | null>(null)
+  const [wizardStep, setWizardStep] = useState(1)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
 
   const filteredOccurrences = useMemo(() => {
@@ -223,7 +224,32 @@ export default function Occurrences() {
 
     setOccurrences(updatedOccurrences)
     setForm(createEmptyForm())
+    setWizardStep(1)
     setMessage('Ocorrência registrada com sucesso.')
+  }
+
+  function nextWizardStep() {
+    if (wizardStep === 1 && (!form.store || !form.sector)) {
+      setMessage('Selecione a loja e o setor para continuar.')
+      return
+    }
+
+    if (wizardStep === 2 && (!form.category || form.types.length === 0)) {
+      setMessage('Selecione a categoria e pelo menos uma ocorrência.')
+      return
+    }
+
+    if (wizardStep === 2 && form.types.includes('Outro') && !form.otherType.trim()) {
+      setMessage('Especifique a ocorrência em “Outro” para continuar.')
+      return
+    }
+
+    if (wizardStep === 3 && (!form.responsible || !form.description || !form.dateTime)) {
+      setMessage('Informe o responsável, a descrição e a data para continuar.')
+      return
+    }
+
+    setWizardStep((current) => Math.min(4, current + 1))
   }
 
   return (
@@ -246,7 +272,15 @@ export default function Occurrences() {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="form-grid">
+            <div className="mobile-wizard-progress" aria-label={`Etapa ${wizardStep} de 4`}>
+              <strong>Etapa {wizardStep} de 4</strong>
+              <div><span style={{ width: `${wizardStep * 25}%` }} /></div>
+              <p>{['Loja e setor', 'Tipo da ocorrência', 'Detalhes', 'Conferir e salvar'][wizardStep - 1]}</p>
+            </div>
+
+            <section className={`wizard-step ${wizardStep === 1 ? 'active' : ''}`}>
+              <h3 className="mobile-step-title">1. Onde aconteceu?</h3>
+              <div className="form-grid">
               <label>
                 Loja *
                 <select value={form.store} onChange={(event) => setForm({ ...form, store: event.target.value })}>
@@ -270,8 +304,11 @@ export default function Occurrences() {
                 </select>
               </label>
             </div>
+            </section>
 
-            <div className="form-grid">
+            <section className={`wizard-step ${wizardStep === 2 ? 'active' : ''}`}>
+              <h3 className="mobile-step-title">2. O que aconteceu?</h3>
+              <div className="form-grid">
               <label>
                 Categoria *
                 <select
@@ -351,8 +388,11 @@ export default function Occurrences() {
                 {listeningField === 'otherType' && <small className="voice-status">Ouvindo o tipo da ocorrência...</small>}
               </label>
             )}
+            </section>
 
-            <label>
+            <section className={`wizard-step ${wizardStep === 3 ? 'active' : ''}`}>
+              <h3 className="mobile-step-title">3. Conte os detalhes</h3>
+              <label>
               Responsável *
               <select value={form.responsible} onChange={(event) => setForm({ ...form, responsible: event.target.value })}>
                 <option value="">Selecione</option>
@@ -409,8 +449,25 @@ export default function Occurrences() {
                 </div>
               )}
             </div>
+            </section>
 
-            <button className="primary-button" type="submit">Salvar ocorrência</button>
+            <section className={`wizard-step wizard-review ${wizardStep === 4 ? 'active' : ''}`}>
+              <h3 className="mobile-step-title">4. Confira antes de salvar</h3>
+              <div className="review-list">
+                <div><span>Loja e setor</span><strong>{form.store || 'Não informado'} • {form.sector || 'Não informado'}</strong></div>
+                <div><span>Categoria</span><strong>{form.category || 'Não informada'}</strong></div>
+                <div><span>Ocorrência</span><strong>{form.types.filter((type) => type !== 'Outro').concat(form.otherType || []).filter(Boolean).join(', ') || 'Não informada'}</strong></div>
+                <div><span>Gravidade</span><strong>{form.priority}</strong></div>
+                <div><span>Responsável</span><strong>{form.responsible || 'Não informado'}</strong></div>
+                <div><span>Descrição</span><strong>{form.description || 'Não informada'}</strong></div>
+              </div>
+              <button className="primary-button" type="submit">Confirmar e salvar</button>
+            </section>
+
+            <div className="mobile-wizard-actions">
+              {wizardStep > 1 && <button className="wizard-back" type="button" onClick={() => setWizardStep((current) => current - 1)}>Voltar</button>}
+              {wizardStep < 4 && <button className="wizard-next" type="button" onClick={nextWizardStep}>Continuar</button>}
+            </div>
           </form>
         </article>
 
