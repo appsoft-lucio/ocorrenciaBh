@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { logout } from '../../services/authStorage'
 
 interface SidebarProps {
   isOpen: boolean
@@ -16,6 +17,14 @@ const navigation = [
 ]
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const navigate = useNavigate()
+
+  function handleLogout() {
+    logout()
+    onClose()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <>
       <aside className={isOpen ? 'sidebar open' : 'sidebar'}>
@@ -41,7 +50,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </ul>
         </nav>
 
-        <button type="button" className="sidebar-footer">Sair</button>
+        <button type="button" className="sidebar-footer" onClick={handleLogout}>Sair</button>
       </aside>
 
       {isOpen && <button className="overlay" aria-label="Fechar menu" onClick={onClose} />}

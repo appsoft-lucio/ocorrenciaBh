@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getSession, logout } from '../../services/authStorage'
 import Icon from '../ui/Icon'
 
 interface HeaderProps {
@@ -7,6 +9,8 @@ interface HeaderProps {
 }
 
 export default function Header({ onOpenMenu, title = 'Dashboard' }: HeaderProps) {
+  const navigate = useNavigate()
+  const user = getSession()
   const [largeText, setLargeText] = useState(() => localStorage.getItem('accessibilityLargeText') === 'true')
   const [highContrast, setHighContrast] = useState(() => localStorage.getItem('accessibilityHighContrast') === 'true')
 
@@ -22,6 +26,11 @@ export default function Header({ onOpenMenu, title = 'Dashboard' }: HeaderProps)
     setHighContrast(nextValue)
     localStorage.setItem('accessibilityHighContrast', String(nextValue))
     document.documentElement.classList.toggle('high-contrast', nextValue)
+  }
+
+  function handleLogout() {
+    logout()
+    navigate('/login', { replace: true })
   }
 
   return (
@@ -58,8 +67,8 @@ export default function Header({ onOpenMenu, title = 'Dashboard' }: HeaderProps)
             ◐
           </button>
         </div>
-        <span>👤 Gerente Matriz</span>
-        <button className="logout-button" type="button">Sair</button>
+        <span>👤 {user?.name || 'Usuário'}</span>
+        <button className="logout-button" type="button" onClick={handleLogout}>Sair</button>
       </div>
     </header>
   )
