@@ -1,22 +1,14 @@
-import Fastify from "fastify";
+import "dotenv/config";
+import { buildApp } from "./app.js";
 
-const app = Fastify({
-  logger: true,
-});
+const app = buildApp();
 
-app.get("/health", async () => {
-  return {
-    status: "ok",
-    message: "Backend Ocorrências BH funcionando",
-  };
-});
+const port = Number(process.env.PORT) || 3333;
+const host = process.env.HOST || "0.0.0.0";
 
 async function start() {
   try {
-    await app.listen({
-      port: 3333,
-      host: "0.0.0.0",
-    });
+    await app.listen({ port, host });
   } catch (error) {
     app.log.error(error);
     process.exit(1);
