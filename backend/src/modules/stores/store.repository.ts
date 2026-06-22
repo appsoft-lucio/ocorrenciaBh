@@ -56,6 +56,7 @@ const storeFields = `
   ATUALIZADO_EM
 `;
 
+// Listar todas as lojas no banco de dados
 export async function listStores(): Promise<Store[]> {
   const rows = await query<StoreRow>(`
     SELECT ${storeFields}
@@ -66,6 +67,7 @@ export async function listStores(): Promise<Store[]> {
   return rows.map(mapStore);
 }
 
+// Buscar uma loja pelo ID no banco de dados
 export async function findStoreById(id: number): Promise<Store | null> {
   const [row] = await query<StoreRow>(
     `SELECT ${storeFields} FROM LOJAS WHERE ID = ?`,
@@ -75,6 +77,7 @@ export async function findStoreById(id: number): Promise<Store | null> {
   return row ? mapStore(row) : null;
 }
 
+// Buscar uma loja pelo código para evitar duplicidade
 export async function findStoreByCode(code: string): Promise<Store | null> {
   const [row] = await query<StoreRow>(
     `SELECT ${storeFields} FROM LOJAS WHERE CODIGO = ?`,
@@ -84,6 +87,7 @@ export async function findStoreByCode(code: string): Promise<Store | null> {
   return row ? mapStore(row) : null;
 }
 
+// Inserir uma nova loja no banco de dados
 export async function createStore(input: CreateStoreInput): Promise<Store> {
   const [created] = await query<{ id: number }>(
     `
@@ -125,6 +129,7 @@ export async function createStore(input: CreateStoreInput): Promise<Store> {
   return store;
 }
 
+// Atualizar uma loja no banco de dados
 export async function updateStore(
   id: number,
   input: UpdateStoreInput,
@@ -159,4 +164,17 @@ export async function updateStore(
   );
 
   return findStoreById(id);
+}
+
+// Inativar uma loja no banco de dados sem apagar seu histórico
+export async function deactivateStore(id: number): Promise<void> {
+  await query(
+    `
+      UPDATE LOJAS
+      SET STATUS = 'INATIVA',
+          ATUALIZADO_EM = CURRENT_TIMESTAMP
+      WHERE ID = ?
+    `,
+    [id],
+  );
 }

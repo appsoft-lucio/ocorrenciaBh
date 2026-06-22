@@ -1,5 +1,6 @@
 import {
   createStore as createStoreRepository,
+  deactivateStore as deactivateStoreRepository,
   findStoreByCode,
   findStoreById as findStoreByIdRepository,
   listStores as listStoresRepository,
@@ -122,4 +123,14 @@ export async function updateStore(id: number, input: UpdateStoreInput) {
 
     throw error;
   }
+}
+
+export async function deactivateStore(id: number) {
+  const store = await findStoreByIdRepository(id);
+
+  if (!store) {
+    throw new StoreNotFoundError();
+  }
+
+  await deactivateStoreRepository(id);
 }

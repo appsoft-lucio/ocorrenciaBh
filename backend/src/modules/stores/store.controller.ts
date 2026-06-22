@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { parseStoreId } from "./store.schema.js";
 import {
   createStore,
+  deactivateStore,
   getStoreById,
   listStores,
   StoreCodeAlreadyExistsError,
@@ -14,6 +15,7 @@ import type {
   UpdateStoreInput,
 } from "./store.types.js";
 
+// Listar todas as lojas
 export async function listStoresController(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -31,6 +33,7 @@ export async function listStoresController(
   }
 }
 
+// Buscar uma loja pelo ID
 export async function getStoreByIdController(
   request: FastifyRequest<{ Params: StoreParams }>,
   reply: FastifyReply,
@@ -64,6 +67,7 @@ export async function getStoreByIdController(
   }
 }
 
+// Inserir uma nova loja
 export async function createStoreController(
   request: FastifyRequest<{ Body: CreateStoreInput }>,
   reply: FastifyReply,
@@ -88,6 +92,7 @@ export async function createStoreController(
   }
 }
 
+// Atualizar uma loja pelo ID
 export async function updateStoreController(
   request: FastifyRequest<{
     Params: StoreParams;
@@ -127,6 +132,40 @@ export async function updateStoreController(
     return reply.status(503).send({
       error: "DATABASE_UNAVAILABLE",
       message: "Não foi possível atualizar a loja.",
+    });
+  }
+}
+
+// Inativar uma loja pelo ID
+export async function deactivateStoreController(
+  request: FastifyRequest<{ Params: StoreParams }>,
+  reply: FastifyReply,
+) {
+  const id = parseStoreId(request.params.id);
+
+  if (!id) {
+    return reply.status(400).send({
+      error: "INVALID_STORE_ID",
+      message: "O ID da loja deve ser um número inteiro positivo.",
+    });
+  }
+
+  try {
+    await deactivateStore(id);
+    return reply.status(204).send();
+  } catch (error) {
+    if (error instanceof StoreNotFoundError) {
+      return reply.status(404).send({
+        error: "STORE_NOT_FOUND",
+        message: error.message,
+      });
+    }
+
+    request.log.error(error, "Não foi possível inativar a loja no Firebird");
+
+    return reply.status(503).send({
+      error: "DATABASE_UNAVAILABLE",
+      message: "Não foi possível inativar a loja.",
     });
   }
 }

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import {
   createStoreController,
+  deactivateStoreController,
   getStoreByIdController,
   listStoresController,
   updateStoreController,
@@ -17,8 +18,10 @@ import type {
 } from "./store.types.js";
 
 export async function storeRoutes(app: FastifyInstance) {
+  // Listar todas as lojas
   app.get("/lojas", listStoresController);
 
+  // Inserir uma nova loja
   app.post<{ Body: CreateStoreInput }>(
     "/lojas",
     {
@@ -29,6 +32,7 @@ export async function storeRoutes(app: FastifyInstance) {
     createStoreController,
   );
 
+  // Buscar uma loja pelo ID
   app.get<{ Params: StoreParams }>(
     "/lojas/:id",
     {
@@ -39,6 +43,7 @@ export async function storeRoutes(app: FastifyInstance) {
     getStoreByIdController,
   );
 
+  // Atualizar uma loja pelo ID
   app.put<{ Params: StoreParams; Body: UpdateStoreInput }>(
     "/lojas/:id",
     {
@@ -48,5 +53,16 @@ export async function storeRoutes(app: FastifyInstance) {
       },
     },
     updateStoreController,
+  );
+
+  // Inativar uma loja pelo ID
+  app.delete<{ Params: StoreParams }>(
+    "/lojas/:id",
+    {
+      schema: {
+        params: storeIdParamsSchema,
+      },
+    },
+    deactivateStoreController,
   );
 }
