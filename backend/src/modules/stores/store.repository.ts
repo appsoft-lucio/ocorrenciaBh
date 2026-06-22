@@ -1,20 +1,5 @@
 import { query } from "../../config/database.js";
-
-export interface Store {
-  id: number;
-  code: string;
-  name: string;
-  city: string | null;
-  address: string | null;
-  regional: string | null;
-  manager: string | null;
-  phone: string | null;
-  email: string | null;
-  openingHours: string | null;
-  status: "ATIVA" | "INATIVA";
-  createdAt: Date;
-  updatedAt: Date;
-}
+import type { Store, StoreStatus } from "./store.types.js";
 
 interface StoreRow {
   id: number;
@@ -27,7 +12,7 @@ interface StoreRow {
   telefone: string | null;
   email: string | null;
   horario_funcionamento: string | null;
-  status: "ATIVA" | "INATIVA";
+  status: StoreStatus;
   criado_em: Date;
   atualizado_em: Date;
 }
