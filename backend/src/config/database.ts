@@ -58,7 +58,7 @@ export async function query<T>(sql: string, params: unknown[] = []): Promise<T[]
           return;
         }
 
-        resolve(result as T[]);
+        resolve((Array.isArray(result) ? result : [result]) as T[]);
       });
     });
   } finally {

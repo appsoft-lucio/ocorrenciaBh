@@ -19,3 +19,16 @@ export interface Store {
 export interface StoreParams {
   id: string;
 }
+
+export interface CreateStoreInput {
+  code: string;
+  name: string;
+  city?: string;
+  address?: string;
+  regional?: string;
+  manager?: string;
+  phone?: string;
+  email?: string;
+  openingHours?: string;
+  status?: StoreStatus;
+}

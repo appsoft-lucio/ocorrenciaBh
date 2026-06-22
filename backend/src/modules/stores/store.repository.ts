@@ -1,5 +1,9 @@
 import { query } from "../../config/database.js";
-import type { Store, StoreStatus } from "./store.types.js";
+import type {
+  CreateStoreInput,
+  Store,
+  StoreStatus,
+} from "./store.types.js";
 
 interface StoreRow {
   id: number;
@@ -68,4 +72,54 @@ export async function findStoreById(id: number): Promise<Store | null> {
   );
 
   return row ? mapStore(row) : null;
+}
+
+export async function findStoreByCode(code: string): Promise<Store | null> {
+  const [row] = await query<StoreRow>(
+    `SELECT ${storeFields} FROM LOJAS WHERE CODIGO = ?`,
+    [code],
+  );
+
+  return row ? mapStore(row) : null;
+}
+
+export async function createStore(input: CreateStoreInput): Promise<Store> {
+  const [created] = await query<{ id: number }>(
+    `
+      INSERT INTO LOJAS (
+        CODIGO,
+        NOME,
+        CIDADE,
+        ENDERECO,
+        REGIONAL,
+        GERENTE,
+        TELEFONE,
+        EMAIL,
+        HORARIO_FUNCIONAMENTO,
+        STATUS
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      RETURNING ID
+    `,
+    [
+      input.code,
+      input.name,
+      input.city ?? null,
+      input.address ?? null,
+      input.regional ?? null,
+      input.manager ?? null,
+      input.phone ?? null,
+      input.email ?? null,
+      input.openingHours ?? null,
+      input.status ?? "ATIVA",
+    ],
+  );
+
+  const store = created ? await findStoreById(created.id) : null;
+
+  if (!store) {
+    throw new Error("A loja foi criada, mas não pôde ser consultada.");
+  }
+
+  return store;
 }
