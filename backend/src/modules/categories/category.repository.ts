@@ -3,6 +3,7 @@ import type {
   Category,
   CreateCategoryInput,
   OccurrenceType,
+  UpdateCategoryInput,
 } from "./category.types.js";
 
 interface CategoryRow {
@@ -80,6 +81,7 @@ export async function listCategories(): Promise<Category[]> {
   const typeRows = await query<OccurrenceTypeRow>(`
     SELECT ${occurrenceTypeFields}
     FROM TIPOS_OCORRENCIA
+    WHERE ATIVO = TRUE
     ORDER BY CATEGORIA_ID, NOME
   `);
   const typesByCategory = new Map<number, OccurrenceType[]>();
@@ -112,6 +114,7 @@ export async function findCategoryById(id: number): Promise<Category | null> {
       SELECT ${occurrenceTypeFields}
       FROM TIPOS_OCORRENCIA
       WHERE CATEGORIA_ID = ?
+        AND ATIVO = TRUE
       ORDER BY NOME
     `,
     [id],
@@ -165,4 +168,79 @@ export async function createCategory(
   }
 
   return category;
+}
+
+// Atualizar uma categoria e sincronizar seus tipos em uma única transação
+export async function updateCategory(
+  id: number,
+  input: UpdateCategoryInput,
+): Promise<Category | null> {
+  await withTransaction(async (execute) => {
+    const categoryColumns: Record<
+      Exclude<keyof UpdateCategoryInput, "occurrenceTypes">,
+      string
+    > = {
+      name: "NOME",
+      type: "TIPO",
+      description: "DESCRICAO",
+      active: "ATIVA",
+    };
+    const categoryEntries = Object.entries(input).filter(
+      ([field]) => field !== "occurrenceTypes",
+    ) as [
+      Exclude<keyof UpdateCategoryInput, "occurrenceTypes">,
+      string | boolean | undefined,
+    ][];
+
+    if (categoryEntries.length > 0) {
+      const assignments = categoryEntries.map(([field, value]) =>
+        field === "active"
+          ? `${categoryColumns[field]} = ${value ? "TRUE" : "FALSE"}`
+          : `${categoryColumns[field]} = ?`,
+      );
+      const values = categoryEntries
+        .filter(([field]) => field !== "active")
+        .map(([, value]) => value ?? null);
+
+      await execute(
+        `
+          UPDATE CATEGORIAS
+          SET ${assignments.join(", ")},
+              ATUALIZADO_EM = CURRENT_TIMESTAMP
+          WHERE ID = ?
+        `,
+        [...values, id],
+      );
+    }
+
+    if (input.occurrenceTypes) {
+      await execute(
+        `
+          UPDATE TIPOS_OCORRENCIA
+          SET ATIVO = FALSE,
+              ATUALIZADO_EM = CURRENT_TIMESTAMP
+          WHERE CATEGORIA_ID = ?
+        `,
+        [id],
+      );
+
+      for (const occurrenceType of input.occurrenceTypes) {
+        await execute(
+          `
+            UPDATE OR INSERT INTO TIPOS_OCORRENCIA (
+              CATEGORIA_ID,
+              NOME,
+              ATIVO,
+              ATUALIZADO_EM
+            )
+            VALUES (?, ?, TRUE, CURRENT_TIMESTAMP)
+            MATCHING (CATEGORIA_ID, NOME)
+          `,
+          [id, occurrenceType],
+        );
+      }
+    }
+  });
+
+  return findCategoryById(id);
 }

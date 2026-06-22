@@ -3,14 +3,17 @@ import {
   createCategoryController,
   getCategoryByIdController,
   listCategoriesController,
+  updateCategoryController,
 } from "./category.controller.js";
 import {
   categoryIdParamsSchema,
   createCategoryBodySchema,
+  updateCategoryBodySchema,
 } from "./category.schema.js";
 import type {
   CategoryParams,
   CreateCategoryInput,
+  UpdateCategoryInput,
 } from "./category.types.js";
 
 export async function categoryRoutes(app: FastifyInstance) {
@@ -37,5 +40,17 @@ export async function categoryRoutes(app: FastifyInstance) {
       },
     },
     getCategoryByIdController,
+  );
+
+  // Atualizar uma categoria e seus tipos de ocorrência
+  app.put<{ Params: CategoryParams; Body: UpdateCategoryInput }>(
+    "/categorias/:id",
+    {
+      schema: {
+        params: categoryIdParamsSchema,
+        body: updateCategoryBodySchema,
+      },
+    },
+    updateCategoryController,
   );
 }

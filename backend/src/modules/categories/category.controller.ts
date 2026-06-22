@@ -7,10 +7,12 @@ import {
   DuplicateOccurrenceTypesError,
   getCategoryById,
   listCategories,
+  updateCategory,
 } from "./category.service.js";
 import type {
   CategoryParams,
   CreateCategoryInput,
+  UpdateCategoryInput,
 } from "./category.types.js";
 
 // Listar todas as categorias
@@ -93,6 +95,57 @@ export async function createCategoryController(
     return reply.status(503).send({
       error: "DATABASE_UNAVAILABLE",
       message: "Não foi possível cadastrar a categoria.",
+    });
+  }
+}
+
+// Atualizar uma categoria e seus tipos de ocorrência
+export async function updateCategoryController(
+  request: FastifyRequest<{
+    Params: CategoryParams;
+    Body: UpdateCategoryInput;
+  }>,
+  reply: FastifyReply,
+) {
+  const id = parseCategoryId(request.params.id);
+
+  if (!id) {
+    return reply.status(400).send({
+      error: "INVALID_CATEGORY_ID",
+      message: "O ID da categoria deve ser um número inteiro positivo.",
+    });
+  }
+
+  try {
+    const category = await updateCategory(id, request.body);
+    return { data: category };
+  } catch (error) {
+    if (error instanceof CategoryNotFoundError) {
+      return reply.status(404).send({
+        error: "CATEGORY_NOT_FOUND",
+        message: error.message,
+      });
+    }
+
+    if (error instanceof CategoryNameAlreadyExistsError) {
+      return reply.status(409).send({
+        error: "CATEGORY_NAME_ALREADY_EXISTS",
+        message: error.message,
+      });
+    }
+
+    if (error instanceof DuplicateOccurrenceTypesError) {
+      return reply.status(400).send({
+        error: "DUPLICATE_OCCURRENCE_TYPES",
+        message: error.message,
+      });
+    }
+
+    request.log.error(error, "Não foi possível atualizar a categoria");
+
+    return reply.status(503).send({
+      error: "DATABASE_UNAVAILABLE",
+      message: "Não foi possível atualizar a categoria.",
     });
   }
 }

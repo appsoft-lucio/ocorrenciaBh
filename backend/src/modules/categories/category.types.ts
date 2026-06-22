@@ -28,3 +28,11 @@ export interface CreateCategoryInput {
   description?: string;
   occurrenceTypes: string[];
 }
+
+export interface UpdateCategoryInput {
+  name?: string;
+  type?: string;
+  description?: string;
+  active?: boolean;
+  occurrenceTypes?: string[];
+}
