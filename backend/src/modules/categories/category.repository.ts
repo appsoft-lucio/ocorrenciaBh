@@ -1,5 +1,9 @@
-import { query } from "../../config/database.js";
-import type { Category, OccurrenceType } from "./category.types.js";
+import { query, withTransaction } from "../../config/database.js";
+import type {
+  Category,
+  CreateCategoryInput,
+  OccurrenceType,
+} from "./category.types.js";
 
 interface CategoryRow {
   id: number;
@@ -114,4 +118,51 @@ export async function findCategoryById(id: number): Promise<Category | null> {
   );
 
   return mapCategory(category, typeRows.map(mapOccurrenceType));
+}
+
+// Buscar uma categoria pelo nome para evitar duplicidade
+export async function findCategoryByName(
+  name: string,
+): Promise<Category | null> {
+  const [category] = await query<CategoryRow>(
+    `SELECT ${categoryFields} FROM CATEGORIAS WHERE NOME = ?`,
+    [name],
+  );
+
+  return category ? mapCategory(category, []) : null;
+}
+
+// Inserir uma categoria e seus tipos em uma única transação
+export async function createCategory(
+  input: CreateCategoryInput,
+): Promise<Category> {
+  const categoryId = await withTransaction(async (execute) => {
+    const [created] = await execute<{ id: number }>(
+      `
+        INSERT INTO CATEGORIAS (NOME, TIPO, DESCRICAO, ATIVA)
+        VALUES (?, ?, ?, TRUE)
+        RETURNING ID
+      `,
+      [input.name, input.type ?? null, input.description ?? null],
+    );
+
+    for (const occurrenceType of input.occurrenceTypes) {
+      await execute(
+        `
+          INSERT INTO TIPOS_OCORRENCIA (CATEGORIA_ID, NOME, ATIVO)
+          VALUES (?, ?, TRUE)
+        `,
+        [created.id, occurrenceType],
+      );
+    }
+
+    return created.id;
+  });
+  const category = await findCategoryById(categoryId);
+
+  if (!category) {
+    throw new Error("A categoria foi criada, mas não pôde ser consultada.");
+  }
+
+  return category;
 }

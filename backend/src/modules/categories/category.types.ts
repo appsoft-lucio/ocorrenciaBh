@@ -21,3 +21,10 @@ export interface Category {
 export interface CategoryParams {
   id: string;
 }
+
+export interface CreateCategoryInput {
+  name: string;
+  type?: string;
+  description?: string;
+  occurrenceTypes: string[];
+}

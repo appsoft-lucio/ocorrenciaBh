@@ -3,6 +3,7 @@ import Firebird, {
   type Database,
   type Options,
   type SupportedCharacterSet,
+  type Transaction,
 } from "node-firebird";
 import { env } from "./env.js";
 
@@ -20,6 +21,11 @@ const options: Options = {
 };
 
 const pool: ConnectionPool = Firebird.pool(5, options);
+
+type TransactionQuery = <T>(
+  sql: string,
+  params?: unknown[],
+) => Promise<T[]>;
 
 function getConnection(): Promise<Database> {
   return new Promise((resolve, reject) => {
@@ -61,6 +67,69 @@ export async function query<T>(sql: string, params: unknown[] = []): Promise<T[]
         resolve((Array.isArray(result) ? result : [result]) as T[]);
       });
     });
+  } finally {
+    await detach(database);
+  }
+}
+
+function transactionQuery(transaction: Transaction): TransactionQuery {
+  return <T>(sql: string, params: unknown[] = []) =>
+    new Promise<T[]>((resolve, reject) => {
+      transaction.query(sql, params, (error, result) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve((Array.isArray(result) ? result : [result]) as T[]);
+      });
+    });
+}
+
+function commit(transaction: Transaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    transaction.commit((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
+}
+
+function rollback(transaction: Transaction): Promise<void> {
+  return new Promise((resolve) => {
+    transaction.rollback(() => resolve());
+  });
+}
+
+export async function withTransaction<T>(
+  operation: (execute: TransactionQuery) => Promise<T>,
+): Promise<T> {
+  const database = await getConnection();
+
+  try {
+    const transaction = await new Promise<Transaction>((resolve, reject) => {
+      database.transaction(Firebird.ISOLATION_READ_COMMITTED, (error, value) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(value);
+      });
+    });
+
+    try {
+      const result = await operation(transactionQuery(transaction));
+      await commit(transaction);
+      return result;
+    } catch (error) {
+      await rollback(transaction);
+      throw error;
+    }
   } finally {
     await detach(database);
   }
