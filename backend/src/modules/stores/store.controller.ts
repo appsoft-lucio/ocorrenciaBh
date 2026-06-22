@@ -6,8 +6,13 @@ import {
   listStores,
   StoreCodeAlreadyExistsError,
   StoreNotFoundError,
+  updateStore,
 } from "./store.service.js";
-import type { CreateStoreInput, StoreParams } from "./store.types.js";
+import type {
+  CreateStoreInput,
+  StoreParams,
+  UpdateStoreInput,
+} from "./store.types.js";
 
 export async function listStoresController(
   request: FastifyRequest,
@@ -79,6 +84,49 @@ export async function createStoreController(
     return reply.status(503).send({
       error: "DATABASE_UNAVAILABLE",
       message: "Não foi possível cadastrar a loja.",
+    });
+  }
+}
+
+export async function updateStoreController(
+  request: FastifyRequest<{
+    Params: StoreParams;
+    Body: UpdateStoreInput;
+  }>,
+  reply: FastifyReply,
+) {
+  const id = parseStoreId(request.params.id);
+
+  if (!id) {
+    return reply.status(400).send({
+      error: "INVALID_STORE_ID",
+      message: "O ID da loja deve ser um número inteiro positivo.",
+    });
+  }
+
+  try {
+    const store = await updateStore(id, request.body);
+    return { data: store };
+  } catch (error) {
+    if (error instanceof StoreNotFoundError) {
+      return reply.status(404).send({
+        error: "STORE_NOT_FOUND",
+        message: error.message,
+      });
+    }
+
+    if (error instanceof StoreCodeAlreadyExistsError) {
+      return reply.status(409).send({
+        error: "STORE_CODE_ALREADY_EXISTS",
+        message: error.message,
+      });
+    }
+
+    request.log.error(error, "Não foi possível atualizar a loja no Firebird");
+
+    return reply.status(503).send({
+      error: "DATABASE_UNAVAILABLE",
+      message: "Não foi possível atualizar a loja.",
     });
   }
 }

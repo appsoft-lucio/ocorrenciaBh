@@ -32,3 +32,5 @@ export interface CreateStoreInput {
   openingHours?: string;
   status?: StoreStatus;
 }
+
+export type UpdateStoreInput = Partial<CreateStoreInput>;

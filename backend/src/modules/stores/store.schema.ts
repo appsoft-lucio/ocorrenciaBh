@@ -27,6 +27,12 @@ export const createStoreBodySchema = {
   },
 } as const;
 
+export const updateStoreBodySchema = {
+  ...createStoreBodySchema,
+  minProperties: 1,
+  required: [],
+} as const;
+
 export function parseStoreId(value: string) {
   const id = Number(value);
 

@@ -3,6 +3,7 @@ import type {
   CreateStoreInput,
   Store,
   StoreStatus,
+  UpdateStoreInput,
 } from "./store.types.js";
 
 interface StoreRow {
@@ -122,4 +123,40 @@ export async function createStore(input: CreateStoreInput): Promise<Store> {
   }
 
   return store;
+}
+
+export async function updateStore(
+  id: number,
+  input: UpdateStoreInput,
+): Promise<Store | null> {
+  const columns: Record<keyof UpdateStoreInput, string> = {
+    code: "CODIGO",
+    name: "NOME",
+    city: "CIDADE",
+    address: "ENDERECO",
+    regional: "REGIONAL",
+    manager: "GERENTE",
+    phone: "TELEFONE",
+    email: "EMAIL",
+    openingHours: "HORARIO_FUNCIONAMENTO",
+    status: "STATUS",
+  };
+  const entries = Object.entries(input) as [
+    keyof UpdateStoreInput,
+    UpdateStoreInput[keyof UpdateStoreInput],
+  ][];
+  const assignments = entries.map(([field]) => `${columns[field]} = ?`);
+  const values = entries.map(([, value]) => value ?? null);
+
+  await query(
+    `
+      UPDATE LOJAS
+      SET ${assignments.join(", ")},
+          ATUALIZADO_EM = CURRENT_TIMESTAMP
+      WHERE ID = ?
+    `,
+    [...values, id],
+  );
+
+  return findStoreById(id);
 }

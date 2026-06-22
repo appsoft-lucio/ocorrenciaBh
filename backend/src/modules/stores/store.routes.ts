@@ -3,12 +3,18 @@ import {
   createStoreController,
   getStoreByIdController,
   listStoresController,
+  updateStoreController,
 } from "./store.controller.js";
 import {
   createStoreBodySchema,
   storeIdParamsSchema,
+  updateStoreBodySchema,
 } from "./store.schema.js";
-import type { CreateStoreInput, StoreParams } from "./store.types.js";
+import type {
+  CreateStoreInput,
+  StoreParams,
+  UpdateStoreInput,
+} from "./store.types.js";
 
 export async function storeRoutes(app: FastifyInstance) {
   app.get("/lojas", listStoresController);
@@ -31,5 +37,16 @@ export async function storeRoutes(app: FastifyInstance) {
       },
     },
     getStoreByIdController,
+  );
+
+  app.put<{ Params: StoreParams; Body: UpdateStoreInput }>(
+    "/lojas/:id",
+    {
+      schema: {
+        params: storeIdParamsSchema,
+        body: updateStoreBodySchema,
+      },
+    },
+    updateStoreController,
   );
 }
