@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import { checkDatabaseConnection } from "./config/database.js";
+import { categoryRoutes } from "./modules/categories/category.routes.js";
 import { storeRoutes } from "./modules/stores/store.routes.js";
 
 export function buildApp() {
@@ -17,6 +18,7 @@ export function buildApp() {
     };
   });
 
+  app.register(categoryRoutes);
   app.register(storeRoutes);
 
   return app;
