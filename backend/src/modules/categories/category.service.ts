@@ -1,5 +1,6 @@
 import {
   createCategory as createCategoryRepository,
+  deactivateCategory as deactivateCategoryRepository,
   findCategoryById as findCategoryByIdRepository,
   findCategoryByName,
   listCategories as listCategoriesRepository,
@@ -156,4 +157,15 @@ export async function updateCategory(
 
     throw error;
   }
+}
+
+// Inativar uma categoria e seus tipos de ocorrência
+export async function deactivateCategory(id: number) {
+  const category = await findCategoryByIdRepository(id);
+
+  if (!category) {
+    throw new CategoryNotFoundError();
+  }
+
+  await deactivateCategoryRepository(id);
 }

@@ -244,3 +244,28 @@ export async function updateCategory(
 
   return findCategoryById(id);
 }
+
+// Inativar uma categoria e seus tipos sem apagar o histórico
+export async function deactivateCategory(id: number): Promise<void> {
+  await withTransaction(async (execute) => {
+    await execute(
+      `
+        UPDATE CATEGORIAS
+        SET ATIVA = FALSE,
+            ATUALIZADO_EM = CURRENT_TIMESTAMP
+        WHERE ID = ?
+      `,
+      [id],
+    );
+
+    await execute(
+      `
+        UPDATE TIPOS_OCORRENCIA
+        SET ATIVO = FALSE,
+            ATUALIZADO_EM = CURRENT_TIMESTAMP
+        WHERE CATEGORIA_ID = ?
+      `,
+      [id],
+    );
+  });
+}

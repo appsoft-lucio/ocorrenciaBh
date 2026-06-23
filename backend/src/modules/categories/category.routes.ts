@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import {
   createCategoryController,
+  deactivateCategoryController,
   getCategoryByIdController,
   listCategoriesController,
   updateCategoryController,
@@ -52,5 +53,16 @@ export async function categoryRoutes(app: FastifyInstance) {
       },
     },
     updateCategoryController,
+  );
+
+  // Inativar uma categoria e seus tipos de ocorrência
+  app.delete<{ Params: CategoryParams }>(
+    "/categorias/:id",
+    {
+      schema: {
+        params: categoryIdParamsSchema,
+      },
+    },
+    deactivateCategoryController,
   );
 }

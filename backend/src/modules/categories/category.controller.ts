@@ -4,6 +4,7 @@ import {
   CategoryNotFoundError,
   CategoryNameAlreadyExistsError,
   createCategory,
+  deactivateCategory,
   DuplicateOccurrenceTypesError,
   getCategoryById,
   listCategories,
@@ -146,6 +147,40 @@ export async function updateCategoryController(
     return reply.status(503).send({
       error: "DATABASE_UNAVAILABLE",
       message: "Não foi possível atualizar a categoria.",
+    });
+  }
+}
+
+// Inativar uma categoria e seus tipos de ocorrência
+export async function deactivateCategoryController(
+  request: FastifyRequest<{ Params: CategoryParams }>,
+  reply: FastifyReply,
+) {
+  const id = parseCategoryId(request.params.id);
+
+  if (!id) {
+    return reply.status(400).send({
+      error: "INVALID_CATEGORY_ID",
+      message: "O ID da categoria deve ser um número inteiro positivo.",
+    });
+  }
+
+  try {
+    await deactivateCategory(id);
+    return reply.status(204).send();
+  } catch (error) {
+    if (error instanceof CategoryNotFoundError) {
+      return reply.status(404).send({
+        error: "CATEGORY_NOT_FOUND",
+        message: error.message,
+      });
+    }
+
+    request.log.error(error, "Não foi possível inativar a categoria");
+
+    return reply.status(503).send({
+      error: "DATABASE_UNAVAILABLE",
+      message: "Não foi possível inativar a categoria.",
     });
   }
 }
